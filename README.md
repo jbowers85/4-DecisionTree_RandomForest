@@ -1,4 +1,4 @@
-# 4-DecisionTree_RandomForest
+# Decision Tree & Random Forest
 
 This repository is meant to provide an example of implementing a decision tree and a random forest in R.  We will predict the survival of passengers on the Titanic! These predictions can even be uploaded to Kaggle to compete in the Titanic Machine Learning challenge.
 
