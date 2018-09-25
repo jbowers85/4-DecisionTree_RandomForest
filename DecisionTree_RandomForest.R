@@ -1,3 +1,4 @@
+#__________________________________________________________________________________
 # DECISION TREE & RANDOM FOREST - SURVIVAL CLASSIFICATION 
 # TITANIC DATA
 #
@@ -6,15 +7,11 @@
 # collapse sections:  Alt + O
 # expand sections:    Shift + Alt + O
 #
-#############################################################
+#___________________________________________________________________________________
 
-
-## 1.) DECISION TREE ####
+## 1.) DECISION TREE - CLASSIFICATION - BINARY DEPENDENT VARIABLE ####
 
 ### Get Data ####
-setwd("C:/Users/hj163e/Documents/My Folder/Personal/GitHub Projects/5 - Decision Tree-Random Forest (classification)")
-getwd()
-
 titanic.train <- read.csv("Titanic_train.csv", header = TRUE)
 head(titanic.train)
 
@@ -74,7 +71,7 @@ dt.cv <- train(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
                data = titanic.train,
                method = "rpart",
                trControl = caret.control,
-              # na.action = na.pass,
+               # na.action = na.pass,
                minsplit = 5, cp = 0.01, xval = 10, maxdepth = 10)
 
 
@@ -102,7 +99,8 @@ write.csv(submission, file = "Kaggle_Titanic.csv", row.names = FALSE)
 
 
 
-## 2.) RANDOM FOREST ####
+## 2.) RANDOM FOREST CLASSIFICATION - ORDINAL DEPENDENT VARIABLE ####
+
 ### Get Data ####
 titanic.train <- read.csv("Titanic_train.csv", header = TRUE)
 head(titanic.train)
@@ -260,7 +258,7 @@ caret.control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
 
 ####  train model using RandomForest
 rf.cv <- train(Survived ~ .
-                , 
+               , 
                data = titanic.train,
                method = "rf",
                trControl = caret.control,
