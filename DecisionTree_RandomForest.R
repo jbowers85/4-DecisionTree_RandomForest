@@ -1,29 +1,33 @@
-#__________________________________________________________________________________
-# DECISION TREE & RANDOM FOREST - SURVIVAL CLASSIFICATION 
-# TITANIC DATA
+# ______________________-__________________________________
+# These are example workflows that predicts the survival of Titanic Passengers using:
+# 
+# 1.)  Decision Tree algorithm
+# 2.) Random Forest algorithm
 #
 # By: James Bowers
 #
-# collapse sections:  Alt + O
-# expand sections:    Shift + Alt + O
-#
-#___________________________________________________________________________________
+#__________________________________________________________
+
+library(caret)
+library(rattle)
+library(here)
 
 ## 1.) DECISION TREE - CLASSIFICATION - BINARY DEPENDENT VARIABLE ####
 
 ### Get Data ####
-titanic.train <- read.csv("Titanic_train.csv", header = TRUE)
+titanic.train <- read.csv(here("Titanic_train.csv"), header = TRUE, stringsAsFactors = FALSE)
 head(titanic.train)
 
-titanic.test <- read.csv("Titanic_test.csv", header = TRUE)
+titanic.test <- read.csv(here("Titanic_test.csv"), header = TRUE, stringsAsFactors = FALSE)
 head(titanic.test)
+
+#### create a combined data frame to for profiling/cleansing
+titanic.combined <- rbind(titanic.train[, -2], titanic.test)
+#### retain classification for training
+survived <- titanic.train$Survived 
 
 
 ### Profile ####
-survived <- titanic.train$Survived # retain classification for training
-
-titanic.combined <- rbind(titanic.train[, -2], titanic.test) # create a combined data frame to for profiling/cleansing
-
 sapply(titanic.combined, function(y) sum(length(which(is.na(y))))) # NA count
 dim(titanic.combined)
 str(titanic.combined)
@@ -32,21 +36,16 @@ summary(titanic.combined)
 
 ### Cleanse #### 
 #### convert data types
-titanic.combined$Name <- as.character(titanic.combined$Name)
-titanic.combined$Ticket <- as.character(titanic.combined$Ticket)
-titanic.combined$Cabin <- as.character(titanic.combined$Cabin)
-
 titanic.combined$Pclass <- as.factor(titanic.combined$Pclass)
 titanic.combined$Sex <- as.factor(titanic.combined$Sex)
 
 str(titanic.combined)
 
-### Handle Nulls ####
-
-#### Variable: Fare
+#### handle nulls
+##### Fare
 titanic.combined$Fare[is.na(titanic.combined$Fare)] <- median(titanic.combined$Fare, na.rm = TRUE)
 
-#### Variable: Age
+##### Age
 titanic.combined$Age[is.na(titanic.combined$Age)] <- median(titanic.combined$Age, na.rm = TRUE)
 
 
@@ -61,8 +60,6 @@ titanic.test <- titanic.combined[892:1309, c(1,2,4,5,6,7,9,11)]
 str(titanic.test)
 str(titanic.train)
 
-
-library(caret)
 ####  set up training controls
 caret.control <- trainControl(method = "cv", number = 10)
 
@@ -83,7 +80,6 @@ plot(dt.best)
 text(dt.best)
 
 
-library(rattle)
 fancyRpartPlot(dt.best, main = "Decision Tree", sub = "", caption = "TESTER", type=5)
 
 
@@ -99,49 +95,47 @@ write.csv(submission, file = "Kaggle_Titanic.csv", row.names = FALSE)
 
 
 
-## 2.) RANDOM FOREST CLASSIFICATION - ORDINAL DEPENDENT VARIABLE ####
 
+
+
+
+
+## 2.) RANDOM FOREST ####
 ### Get Data ####
-titanic.train <- read.csv("Titanic_train.csv", header = TRUE)
+titanic.train <- read.csv(here("Titanic_train.csv"), header = TRUE, stringsAsFactors = FALSE)
 head(titanic.train)
 
-titanic.test <- read.csv("Titanic_test.csv", header = TRUE)
+titanic.test <- read.csv(here("Titanic_test.csv"), header = TRUE, stringsAsFactors = FALSE)
 head(titanic.test)
+
+#### create a combined data frame to for profiling/cleansing
+titanic.combined <- rbind(titanic.train[, -2], titanic.test)
+#### retain classification for training
+survived <- titanic.train$Survived 
 
 
 ### Profile ####
-survived <- titanic.train$Survived # retain survival classification for training
-
-titanic.combined <- rbind(titanic.train[, -2], titanic.test) # create a combined data frame to for profiling/cleansing
-
 sapply(titanic.combined, function(y) sum(length(which(is.na(y))))) # NA count
 dim(titanic.combined)
 str(titanic.combined)
 summary(titanic.combined)
 
-### Cleanse #### 
-#### convert data types
-titanic.combined$Name <- as.character(titanic.combined$Name)
-titanic.combined$Ticket <- as.character(titanic.combined$Ticket)
-titanic.combined$Cabin <- as.character(titanic.combined$Cabin)
-
-titanic.combined$Pclass <- as.factor(titanic.combined$Pclass)
-titanic.combined$Sex <- as.factor(titanic.combined$Sex)
-
-str(titanic.combined)
-
-
 ### Feature Engineer ####  
+
+#### Cabin Prefix
 titanic.combined$CabinPrefix <- as.factor(substr(titanic.combined$Cabin,1,1))
 
+#### Family Unit Count
 titanic.combined$FamUnit <- titanic.combined$SibSp + titanic.combined$Parch
 
-
+#### Person Type (i.e. Gender, Married, Class, Title)
 titanic.combined$Type <- NA # initialize type feature
-#### Miss
+
+##### Miss
 missIndex <- grep("Miss", titanic.combined$Name, ignore.case = FALSE)
 titanic.combined$Type[missIndex] <- "Miss"
-#### Mrs
+
+##### Mrs
 mrsIndex <- grep("Mrs\\.", titanic.combined$Name, ignore.case = FALSE)
 msIndex <- grep("Ms\\.", titanic.combined$Name, ignore.case = FALSE)
 mmeIndex <- grep("Mme", titanic.combined$Name, ignore.case = FALSE)
@@ -150,16 +144,19 @@ titanic.combined$Type[mrsIndex] <- "Mrs"
 titanic.combined$Type[msIndex] <- "Mrs"
 titanic.combined$Type[mmeIndex] <- "Mrs"
 titanic.combined$Type[mlleIndex] <- "Mrs"
-#### Mr
+
+##### Mr
 mrIndex <- grep("Mr\\.", titanic.combined$Name, ignore.case = FALSE)
 titanic.combined$Type[mrIndex] <- "Mr"
 sirIndex <- grep("Sir\\.", titanic.combined$Name, ignore.case = FALSE)
 titanic.combined$Type[sirIndex] <- "Mr"
 titanic.combined$Type[823] <- "Mr" 
-#### Master
+
+##### Master
 masterIndex <- grep("Master", titanic.combined$Name, ignore.case = FALSE)
 titanic.combined$Type[masterIndex] <- "Master"
-#### Other Official Title
+
+##### Other Official Title
 drIndex <- grep("Dr\\.", titanic.combined$Name, ignore.case = FALSE)
 majorIndex <- grep("Major", titanic.combined$Name, ignore.case = FALSE)
 colIndex <- grep("Col\\.", titanic.combined$Name, ignore.case = FALSE)
@@ -182,21 +179,24 @@ titanic.combined$Type[ladyIndex] <- "Other_Official"
 #### convert to factor
 titanic.combined$Type <- as.factor(titanic.combined$Type)
 table(titanic.combined$Type)
-head(titanic.combined)
 
+### Cleanse #### 
+#### convert data types
+titanic.combined$Pclass <- as.factor(titanic.combined$Pclass)
+titanic.combined$Sex <- as.factor(titanic.combined$Sex)
 
-### Handle Nulls ####
+str(titanic.combined)
 
-#### Variable: Fare
+#### handle nulls 
+##### Fare
 titanic.combined$Fare[is.na(titanic.combined$Fare)] <- median(titanic.combined$Fare, na.rm = TRUE)
 
-#### Variable: Age
-
-##### Method 1: Multiple Linear Regression
+##### Age
+###### Method 1: Multiple Linear Regression
 titanic.combined.ageNA <- titanic.combined[is.na(titanic.combined[,5]),]
 titanic.combined.ageNotNA <- titanic.combined[!is.na(titanic.combined[,5]),]
 
-pairs(titanic.combined.ageNotNA[,c(5,2,11,14)])
+pairs(titanic.combined.ageNotNA[ ,c(5,2,11,14)])
 
 library(car)
 
@@ -211,7 +211,7 @@ summary(step)$adj.r.squared # this model explains 42% of the variation in mpg
 
 ages <- predict(step, titanic.combined.ageNA)
 
-##### Method 2: Imputation using MICE
+###### Method 2: Imputation using MICE
 titanic.imputed <- titanic.combined[ ,c(2, 5, 14)]## keep only necessary columns for imputation
 str(titanic.imputed)
 
@@ -244,7 +244,7 @@ head(titanic.combined,25)
 titanic.train <- titanic.combined[1:891, c(2,4,5,6,7,9,11,12,14)]
 titanic.train$Survived <- as.factor(survived)
 
-titanic.test <- titanic.combined[892:1309, c(2,4,5,6,7,9,11,12,14)]
+titanic.test <- titanic.combined[892:1309, c(1,2,4,5,6,7,9,11,12,14)]
 
 str(titanic.test)
 str(titanic.train)
@@ -253,7 +253,6 @@ str(titanic.train)
 set.seed(217)
 
 ####  set up caret to perform 10-fold cross validation repeated 3 times
-library(caret)
 caret.control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
 
 ####  train model using RandomForest
@@ -283,10 +282,10 @@ rf.best <- rf.cv$finalModel
 varImpPlot(rf.best)
 
 ### Predict ####
-preds <- predict(rf.cv, titanic.test, type = "raw")
+preds <- predict(rf.cv, titanic.test[ ,-1], type = "raw")
 
 ### Save Results ####
-submission <- data.frame(PassengerId = titanic.test$PassengerID, Survived = preds)
+submission <- data.frame(PassengerId = titanic.test$PassengerId, Survived = preds)
 
 #### Write out a .CSV suitable for Kaggle submission
 write.csv(submission, file = "Kaggle_Titanic.csv", row.names = FALSE)
