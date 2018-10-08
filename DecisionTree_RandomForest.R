@@ -1,4 +1,4 @@
-# ______________________-__________________________________
+# _________________________________________________________
 # These are example workflows that predicts the survival of Titanic Passengers using:
 # 
 # 1.)  Decision Tree algorithm
